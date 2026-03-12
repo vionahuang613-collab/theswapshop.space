@@ -3,130 +3,139 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Swap Shop | Art Block Exchange</title>
+  <title>The Swap Shop | Immersive Art Exchange</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body data-stage="1">
-  <div class="bg-liquid"></div>
-  <div class="bg-noise"></div>
-  <div class="particle-layer" id="particleLayer" aria-hidden="true"></div>
+  <canvas id="plasmaCanvas" class="plasma-canvas" aria-hidden="true"></canvas>
+  <div class="bg-noise" aria-hidden="true"></div>
+  <div class="floating-layer" id="floatingLayer" aria-hidden="true"></div>
+  <div class="light-follow" id="lightFollow" aria-hidden="true"></div>
 
-  <header class="top-bar glass">
+  <header class="top-bar glass-panel">
     <div>
-      <h1>THE SWAP SHOP</h1>
-      <p>Non-commercial art fragment exchange for students stuck in creative block.</p>
+      <p class="kicker">THE SWAP SHOP</p>
+      <h1>Turn artistic leftovers into someone else's breakthrough.</h1>
+      <p class="summary">A non-commercial exchange for creators in art block. Deposit scraps. Draw an anonymous fragment. Build from imperfection.</p>
     </div>
-    <button class="sound-btn" id="soundToggle" aria-pressed="false">SOUND OFF</button>
+    <div class="top-actions">
+      <button id="soundToggle" class="pill">Sound Off</button>
+      <button id="randomPrompt" class="pill ghost">Need a Prompt?</button>
+    </div>
   </header>
 
-  <section class="hero glass" id="introQuestion">
-    <p class="eyebrow">IMMERSIVE INSTALLATION</p>
-    <h2>Do you have artistic leftovers that never became a final piece?</h2>
-    <p class="lead">Swap unfinished sketches, unused lines, and color scraps anonymously. One person's discarded fragment becomes another person's breakthrough.</p>
+  <section class="prompt-banner glass-panel" id="promptBanner">
+    <p id="promptText">Question: Which unfinished piece still haunts your notebook?</p>
+  </section>
 
-    <div class="steps">
-      <span class="step-chip active" id="chip1">1. Deposit a Scrap</span>
-      <span class="step-chip" id="chip2">2. Draw a Capsule</span>
-      <span class="step-chip" id="chip3">3. Save or Mark Used</span>
-    </div>
-
-    <div class="hero-actions">
-      <button class="primary-btn" id="beginDeposit">Deposit My Scrap</button>
-      <button class="ghost-btn" id="drawNow">Skip Deposit, Draw Now</button>
+  <section class="flow-panel glass-panel">
+    <div class="flow-chip active" id="chip1">1. Deposit</div>
+    <div class="flow-chip" id="chip2">2. Draw</div>
+    <div class="flow-chip" id="chip3">3. Unbox</div>
+    <div class="flow-actions">
+      <button id="startDeposit" class="cta">Deposit My Scrap</button>
+      <button id="skipDeposit" class="cta ghost">Skip Deposit, Draw Now</button>
     </div>
   </section>
 
-  <main class="scene" id="scene">
+  <main class="stage" id="stage">
     <section class="installation" id="installation">
-      <div class="neon-cable cable-left"></div>
-      <div class="neon-cable cable-right"></div>
+      <div class="aura-ring ring-a"></div>
+      <div class="aura-ring ring-b"></div>
 
-      <article class="machine glass" id="machine">
-        <div class="machine-title">SWAP CAPSULE CONSOLE</div>
+      <article class="machine glass-panel" id="machine">
+        <div class="machine-head">
+          <span>SWAP INSTALLATION CONSOLE</span>
+          <span class="head-dot"></span>
+        </div>
 
-        <div class="glass-chamber" id="glassChamber">
-          <div class="capsule capsule-a"></div>
-          <div class="capsule capsule-b"></div>
-          <div class="capsule capsule-c"></div>
+        <section class="vault" id="vault">
+          <div class="vault-glass"></div>
 
-          <p class="screen-text" id="screenText">Step 1: Deposit your scrap. Or use "Skip Deposit, Draw Now" above.</p>
-          <p class="screen-sub" id="screenSub">This machine turns abandoned ideas into anonymous creative prompts.</p>
-
-          <div class="draw-actions hidden" id="drawActions">
-            <button class="draw-btn" data-mode="visual">A: Draw Visual Fragment</button>
-            <button class="draw-btn" data-mode="mixed">B: Draw Text / Hybrid Fragment</button>
+          <div class="vault-orbit" id="vaultOrbit" aria-hidden="true">
+            <div class="mini-capsule c1"></div>
+            <div class="mini-capsule c2"></div>
+            <div class="mini-capsule c3"></div>
+            <div class="mini-capsule c4"></div>
+            <div class="mini-capsule c5"></div>
           </div>
-        </div>
 
-        <div class="machine-controls">
-          <button class="mechanic-btn" id="btnA" aria-label="Draw Visual">A</button>
-          <button class="mechanic-btn" id="btnB" aria-label="Draw Hybrid">B</button>
-          <button class="coin-slot" id="coinSlot">DEPOSIT SCRAP</button>
-        </div>
-
-        <p class="machine-helper">Not sure what to do? Start with <strong>DEPOSIT SCRAP</strong>, then choose <strong>A</strong> or <strong>B</strong>.</p>
-
-        <div class="dispense-bay">
-          <div class="gacha-ball hidden" id="gachaBall">
-            <span>Tap To Unbox</span>
+          <div class="robot-arm" id="robotArm" aria-hidden="true">
+            <div class="arm-base"></div>
+            <div class="arm-segment"></div>
+            <div class="arm-tip"></div>
           </div>
-        </div>
+
+          <div class="status-screen" id="statusScreen">
+            <p class="status-main" id="statusMain">Step 1: Deposit your artistic leftovers.</p>
+            <p class="status-sub" id="statusSub">Upload sketch, text, or palette. Then the machine generates a blind capsule.</p>
+
+            <div class="draw-grid hidden" id="drawGrid">
+              <button class="draw-option" data-mode="visual">A · Visual Fragment</button>
+              <button class="draw-option" data-mode="hybrid">B · Text + Visual Hybrid</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="controls">
+          <button class="metal-key" id="btnA">A</button>
+          <button class="metal-key" id="btnB">B</button>
+          <button class="deposit-key" id="depositKey">Deposit Scrap</button>
+        </section>
+
+        <section class="dispense-lane">
+          <div class="capsule-drop hidden" id="capsuleDrop">
+            <span>TAP TO UNBOX</span>
+          </div>
+        </section>
       </article>
     </section>
   </main>
 
-  <section class="upload-modal glass hidden" id="uploadModal" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
-    <div class="modal-head">
-      <h3 id="uploadTitle">Deposit Your Creative Scrap</h3>
-      <button class="close-btn" id="closeUpload" aria-label="Close">×</button>
+  <section class="modal glass-panel hidden" id="uploadModal" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
+    <div class="modal-top">
+      <h2 id="uploadTitle">Deposit Your Scrap</h2>
+      <button class="close" id="closeUpload">×</button>
     </div>
-
-    <form id="uploadForm">
+    <form id="uploadForm" class="modal-body">
       <label>
-        Sketch Fragment (Image)
-        <input type="file" id="imageInput" accept="image/*">
+        Sketch Fragment
+        <input type="file" accept="image/*">
       </label>
-
       <label>
-        Abandoned Line (Text)
-        <textarea id="textInput" rows="3" placeholder="Type one unfinished sentence..."></textarea>
+        Abandoned Line
+        <textarea rows="3" placeholder="Type an unfinished line..."></textarea>
       </label>
-
-      <div class="palette-area">
-        <span>Color Scrap (4 chips)</span>
+      <label>
+        Color Scrap
         <div class="palette-row">
-          <input type="color" value="#ff9de9">
-          <input type="color" value="#ff5ecf">
-          <input type="color" value="#ffc2ef">
-          <input type="color" value="#d472ff">
+          <input type="color" value="#ff64d0">
+          <input type="color" value="#ffa8e8">
+          <input type="color" value="#f0c5ff">
+          <input type="color" value="#ff7ed8">
         </div>
-      </div>
-
-      <button class="primary-btn" type="submit">Analyze Deposit</button>
+      </label>
+      <button type="submit" class="cta">Analyze Deposit</button>
     </form>
   </section>
 
-  <section class="unbox-modal glass hidden" id="unboxModal" role="dialog" aria-modal="true" aria-labelledby="unboxTitle">
-    <div class="modal-head">
-      <h3 id="unboxTitle">Capsule Unboxed</h3>
-      <button class="close-btn" id="closeUnbox" aria-label="Close">×</button>
+  <section class="modal glass-panel hidden" id="unboxModal" role="dialog" aria-modal="true" aria-labelledby="unboxTitle">
+    <div class="modal-top">
+      <h2 id="unboxTitle">Capsule Unboxed</h2>
+      <button class="close" id="closeUnbox">×</button>
     </div>
-
-    <article class="fragment-card" id="fragmentCard"></article>
-
-    <div class="result-actions">
-      <button class="primary-btn" id="saveFragment">Save Fragment</button>
-      <button class="ghost-btn" id="useFragment">Mark as Used</button>
+    <article class="fragment-box" id="fragmentBox"></article>
+    <div class="unbox-actions">
+      <button id="saveFragment" class="cta">Save Fragment</button>
+      <button id="markUsed" class="cta ghost">Mark as Used</button>
     </div>
-
-    <p class="small-note">When a new piece is uploaded within 30 days using this fragment, the original donor receives an anonymous notification.</p>
   </section>
 
-  <div class="toast hidden" id="toast"></div>
-  <div class="coin-cursor" id="coinCursor" aria-hidden="true">$</div>
+  <div id="toast" class="toast hidden"></div>
+  <div id="coinCursor" class="coin-cursor" aria-hidden="true">$</div>
 
   <script src="./script.js"></script>
 </body>
