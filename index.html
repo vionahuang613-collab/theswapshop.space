@@ -3,140 +3,93 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Swap Shop | Immersive Art Exchange</title>
+  <title>Swap Shop Space</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
 </head>
-<body data-stage="1">
-  <canvas id="plasmaCanvas" class="plasma-canvas" aria-hidden="true"></canvas>
-  <div class="bg-noise" aria-hidden="true"></div>
-  <div class="floating-layer" id="floatingLayer" aria-hidden="true"></div>
-  <div class="light-follow" id="lightFollow" aria-hidden="true"></div>
-
-  <header class="top-bar glass-panel">
-    <div>
-      <p class="kicker">THE SWAP SHOP</p>
-      <h1>Turn artistic leftovers into someone else's breakthrough.</h1>
-      <p class="summary">A non-commercial exchange for creators in art block. Deposit scraps. Draw an anonymous fragment. Build from imperfection.</p>
-    </div>
-    <div class="top-actions">
-      <button id="soundToggle" class="pill">Sound Off</button>
-      <button id="randomPrompt" class="pill ghost">Need a Prompt?</button>
-    </div>
-  </header>
-
-  <section class="prompt-banner glass-panel" id="promptBanner">
-    <p id="promptText">Question: Which unfinished piece still haunts your notebook?</p>
-  </section>
-
-  <section class="flow-panel glass-panel">
-    <div class="flow-chip active" id="chip1">1. Deposit</div>
-    <div class="flow-chip" id="chip2">2. Draw</div>
-    <div class="flow-chip" id="chip3">3. Unbox</div>
-    <div class="flow-actions">
-      <button id="startDeposit" class="cta">Deposit My Scrap</button>
-      <button id="skipDeposit" class="cta ghost">Skip Deposit, Draw Now</button>
-    </div>
-  </section>
-
-  <main class="stage" id="stage">
-    <section class="installation" id="installation">
-      <div class="aura-ring ring-a"></div>
-      <div class="aura-ring ring-b"></div>
-
-      <article class="machine glass-panel" id="machine">
-        <div class="machine-head">
-          <span>SWAP INSTALLATION CONSOLE</span>
-          <span class="head-dot"></span>
-        </div>
-
-        <section class="vault" id="vault">
-          <div class="vault-glass"></div>
-
-          <div class="vault-orbit" id="vaultOrbit" aria-hidden="true">
-            <div class="mini-capsule c1"></div>
-            <div class="mini-capsule c2"></div>
-            <div class="mini-capsule c3"></div>
-            <div class="mini-capsule c4"></div>
-            <div class="mini-capsule c5"></div>
-          </div>
-
-          <div class="robot-arm" id="robotArm" aria-hidden="true">
-            <div class="arm-base"></div>
-            <div class="arm-segment"></div>
-            <div class="arm-tip"></div>
-          </div>
-
-          <div class="status-screen" id="statusScreen">
-            <p class="status-main" id="statusMain">Step 1: Deposit your artistic leftovers.</p>
-            <p class="status-sub" id="statusSub">Upload sketch, text, or palette. Then the machine generates a blind capsule.</p>
-
-            <div class="draw-grid hidden" id="drawGrid">
-              <button class="draw-option" data-mode="visual">A · Visual Fragment</button>
-              <button class="draw-option" data-mode="hybrid">B · Text + Visual Hybrid</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="controls">
-          <button class="metal-key" id="btnA">A</button>
-          <button class="metal-key" id="btnB">B</button>
-          <button class="deposit-key" id="depositKey">Deposit Scrap</button>
-        </section>
-
-        <section class="dispense-lane">
-          <div class="capsule-drop hidden" id="capsuleDrop">
-            <span>TAP TO UNBOX</span>
-          </div>
-        </section>
-      </article>
+<body>
+  <div id="app">
+    <section id="intro" class="intro visible">
+      <div class="intro-copy">
+        <h1>SWAP SHOP</h1>
+        <p>exchange unused ideas</p>
+        <button id="enterBtn" class="btn">enter</button>
+      </div>
     </section>
-  </main>
 
-  <section class="modal glass-panel hidden" id="uploadModal" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
-    <div class="modal-top">
-      <h2 id="uploadTitle">Deposit Your Scrap</h2>
-      <button class="close" id="closeUpload">×</button>
-    </div>
-    <form id="uploadForm" class="modal-body">
-      <label>
-        Sketch Fragment
-        <input type="file" accept="image/*">
-      </label>
-      <label>
-        Abandoned Line
-        <textarea rows="3" placeholder="Type an unfinished line..."></textarea>
-      </label>
-      <label>
-        Color Scrap
-        <div class="palette-row">
-          <input type="color" value="#ff64d0">
-          <input type="color" value="#ffa8e8">
-          <input type="color" value="#f0c5ff">
-          <input type="color" value="#ff7ed8">
+    <section id="experience" class="experience hidden">
+      <canvas id="sceneCanvas"></canvas>
+
+      <button id="historyBtn" class="history-btn">my capsules</button>
+
+      <div class="minimal-ui">
+        <button id="depositBtn" class="btn">deposit idea</button>
+      </div>
+
+      <button id="pullBtn" class="pull-btn btn">pull capsule</button>
+
+      <div id="idleLine" class="idle-line hidden">ideas never disappear<br>they just change hands</div>
+
+      <div id="capsuleCard" class="overlay hidden">
+        <div class="card">
+          <h2 id="cardTitle">capsule</h2>
+          <div class="card-body">
+            <div class="preview" id="cardSketch">sketch fragment</div>
+            <p id="cardText">text fragment</p>
+            <div id="cardPalette" class="palette"></div>
+          </div>
+          <div class="card-actions">
+            <button id="useBtn" class="btn small">use</button>
+            <button id="keepBtn" class="btn small">keep</button>
+            <button id="remixBtn" class="btn small">remix</button>
+            <button id="closeCardBtn" class="btn small ghost">close</button>
+          </div>
         </div>
-      </label>
-      <button type="submit" class="cta">Analyze Deposit</button>
-    </form>
-  </section>
+      </div>
 
-  <section class="modal glass-panel hidden" id="unboxModal" role="dialog" aria-modal="true" aria-labelledby="unboxTitle">
-    <div class="modal-top">
-      <h2 id="unboxTitle">Capsule Unboxed</h2>
-      <button class="close" id="closeUnbox">×</button>
-    </div>
-    <article class="fragment-box" id="fragmentBox"></article>
-    <div class="unbox-actions">
-      <button id="saveFragment" class="cta">Save Fragment</button>
-      <button id="markUsed" class="cta ghost">Mark as Used</button>
-    </div>
-  </section>
+      <div id="depositModal" class="overlay hidden">
+        <form id="depositForm" class="card">
+          <h2>drop your idea</h2>
+          <label>image<input type="file" id="ideaImage" accept="image/*"></label>
+          <label>text<textarea id="ideaText" rows="3" placeholder="one unfinished line..."></textarea></label>
+          <label>palette
+            <div class="palette-inputs">
+              <input type="color" value="#ff74d8">
+              <input type="color" value="#a985ff">
+              <input type="color" value="#77d9ff">
+            </div>
+          </label>
+          <div class="card-actions">
+            <button type="submit" class="btn small">seal capsule</button>
+            <button type="button" id="closeDepositBtn" class="btn small ghost">close</button>
+          </div>
+        </form>
+      </div>
 
-  <div id="toast" class="toast hidden"></div>
-  <div id="coinCursor" class="coin-cursor" aria-hidden="true">$</div>
+      <div id="historyShelf" class="shelf hidden">
+        <h3>my capsules</h3>
+        <div>
+          <h4>deposited ideas</h4>
+          <ul id="depositedList"></ul>
+        </div>
+        <div>
+          <h4>collected ideas</h4>
+          <ul id="collectedList"></ul>
+        </div>
+      </div>
 
-  <script src="./script.js"></script>
+      <div id="remixTools" class="tools hidden">
+        <button class="btn tiny" id="toolDraw">draw</button>
+        <button class="btn tiny" id="toolRecolor">recolor</button>
+        <button class="btn tiny" id="toolText">rearrange text</button>
+      </div>
+
+      <div id="toast" class="toast hidden"></div>
+    </section>
+  </div>
+
+  <script type="module" src="./script.js"></script>
 </body>
 </html>

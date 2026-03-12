@@ -1,281 +1,413 @@
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js";
+import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/controls/OrbitControls.js";
+
 const dom = {
-  body: document.body,
-  plasmaCanvas: document.getElementById("plasmaCanvas"),
-  floatingLayer: document.getElementById("floatingLayer"),
-  lightFollow: document.getElementById("lightFollow"),
-  machine: document.getElementById("machine"),
-  installation: document.getElementById("installation"),
-  vault: document.getElementById("vault"),
-  robotArm: document.getElementById("robotArm"),
-  statusMain: document.getElementById("statusMain"),
-  statusSub: document.getElementById("statusSub"),
-  drawGrid: document.getElementById("drawGrid"),
-  btnA: document.getElementById("btnA"),
-  btnB: document.getElementById("btnB"),
-  depositKey: document.getElementById("depositKey"),
-  startDeposit: document.getElementById("startDeposit"),
-  skipDeposit: document.getElementById("skipDeposit"),
-  capsuleDrop: document.getElementById("capsuleDrop"),
-  uploadModal: document.getElementById("uploadModal"),
-  closeUpload: document.getElementById("closeUpload"),
-  uploadForm: document.getElementById("uploadForm"),
-  unboxModal: document.getElementById("unboxModal"),
-  closeUnbox: document.getElementById("closeUnbox"),
-  fragmentBox: document.getElementById("fragmentBox"),
-  saveFragment: document.getElementById("saveFragment"),
-  markUsed: document.getElementById("markUsed"),
+  intro: document.getElementById("intro"),
+  enterBtn: document.getElementById("enterBtn"),
+  experience: document.getElementById("experience"),
+  canvas: document.getElementById("sceneCanvas"),
+  depositBtn: document.getElementById("depositBtn"),
+  pullBtn: document.getElementById("pullBtn"),
+  capsuleCard: document.getElementById("capsuleCard"),
+  cardTitle: document.getElementById("cardTitle"),
+  cardSketch: document.getElementById("cardSketch"),
+  cardText: document.getElementById("cardText"),
+  cardPalette: document.getElementById("cardPalette"),
+  useBtn: document.getElementById("useBtn"),
+  keepBtn: document.getElementById("keepBtn"),
+  remixBtn: document.getElementById("remixBtn"),
+  closeCardBtn: document.getElementById("closeCardBtn"),
+  depositModal: document.getElementById("depositModal"),
+  closeDepositBtn: document.getElementById("closeDepositBtn"),
+  depositForm: document.getElementById("depositForm"),
+  historyBtn: document.getElementById("historyBtn"),
+  historyShelf: document.getElementById("historyShelf"),
+  depositedList: document.getElementById("depositedList"),
+  collectedList: document.getElementById("collectedList"),
+  idleLine: document.getElementById("idleLine"),
   soundToggle: document.getElementById("soundToggle"),
-  randomPrompt: document.getElementById("randomPrompt"),
-  promptText: document.getElementById("promptText"),
+  remixTools: document.getElementById("remixTools"),
+  toolDraw: document.getElementById("toolDraw"),
+  toolRecolor: document.getElementById("toolRecolor"),
+  toolText: document.getElementById("toolText"),
   toast: document.getElementById("toast"),
-  coinCursor: document.getElementById("coinCursor"),
-  chip1: document.getElementById("chip1"),
-  chip2: document.getElementById("chip2"),
-  chip3: document.getElementById("chip3"),
 };
 
-const prompts = [
-  "Question: Which unfinished piece still haunts your notebook?",
-  "Question: What color did you abandon too early?",
-  "Question: Which line felt too weird to keep?",
-  "Question: If failure was material, what would you sculpt?",
-  "Question: What idea deserves a second owner?",
+const capsuleDataPool = [
+  {
+    title: "capsule · visual",
+    sketch: "floating architecture fragment",
+    text: "a city that breathes in soft static",
+    palette: ["#7ec7ff", "#b6a3ff", "#f9b2ff"],
+  },
+  {
+    title: "capsule · text",
+    sketch: "ink spiral concept",
+    text: "unfinished stories are also maps",
+    palette: ["#92e4ff", "#91a8ff", "#e7c0ff"],
+  },
+  {
+    title: "capsule · mixed",
+    sketch: "broken poster layout",
+    text: "keep the mistake, remove the fear",
+    palette: ["#83d5ff", "#ffb4ef", "#9da8ff"],
+  },
 ];
 
-const fragments = {
-  visual: [
-    {
-      title: "Anonymous Visual Scrap · V041",
-      body: "A chrome moth pinned to a soft pink thundercloud.",
-      colors: ["#ff79d9", "#ffb6ec", "#c48bff"],
-    },
-    {
-      title: "Anonymous Visual Scrap · V063",
-      body: "A translucent staircase dissolving into glossy static grains.",
-      colors: ["#ff4fc8", "#ffa9e8", "#8fe8ff"],
-    },
-  ],
-  hybrid: [
-    {
-      title: "Anonymous Hybrid Scrap · H022",
-      body: "'I stitched my failed drafts into a flag and called it weather.'",
-      colors: ["#ff89e1", "#ffd2f6", "#b27cff"],
-    },
-    {
-      title: "Anonymous Hybrid Scrap · H087",
-      body: "Design a character who only remembers life in overexposed flashes.",
-      colors: ["#ff68d2", "#ffc6f1", "#9deaff"],
-    },
-  ],
-};
-
 const state = {
-  stage: 1,
-  mode: null,
+  started: false,
+  capsules: [],
+  selectedCapsule: null,
+  deposited: [],
+  collected: [],
+  pullInProgress: false,
+  lastActionTs: Date.now(),
   soundOn: false,
   ambientCtx: null,
   ambientNodes: null,
-  pointerX: window.innerWidth * 0.5,
-  pointerY: window.innerHeight * 0.5,
-  smoothX: window.innerWidth * 0.5,
-  smoothY: window.innerHeight * 0.5,
 };
 
-function setStage(stage) {
-  state.stage = stage;
-  dom.body.dataset.stage = String(stage);
-  [dom.chip1, dom.chip2, dom.chip3].forEach((chip) => chip.classList.remove("active"));
-  if (stage === 1) dom.chip1.classList.add("active");
-  if (stage === 2) dom.chip2.classList.add("active");
-  if (stage === 3) dom.chip3.classList.add("active");
+let scene;
+let camera;
+let renderer;
+let controls;
+let rootGroup;
+let innerSpaceGroup;
+let glassShell;
+let raycaster;
+let pointer;
+let hoveredCapsule = null;
+let clock;
+
+function touchActivity() {
+  state.lastActionTs = Date.now();
+  dom.idleLine.classList.add("hidden");
 }
 
-function showToast(message) {
-  dom.toast.textContent = message;
+function showToast(msg) {
+  dom.toast.textContent = msg;
   dom.toast.classList.remove("hidden");
   setTimeout(() => dom.toast.classList.add("hidden"), 1800);
 }
 
-function setStatus(main, sub) {
-  dom.statusMain.textContent = main;
-  dom.statusSub.textContent = sub;
+function createCapsuleMesh(colorA = 0x89c2ff, colorB = 0xbc90ff) {
+  const group = new THREE.Group();
+  const sphereGeo = new THREE.SphereGeometry(0.26, 32, 32);
+  const topMat = new THREE.MeshPhysicalMaterial({
+    color: colorA,
+    transmission: 0.7,
+    thickness: 0.35,
+    roughness: 0.1,
+    metalness: 0,
+    clearcoat: 1,
+    transparent: true,
+    opacity: 0.92,
+    emissive: colorA,
+    emissiveIntensity: 0.06,
+  });
+  const bottomMat = new THREE.MeshPhysicalMaterial({
+    color: colorB,
+    transmission: 0.6,
+    thickness: 0.25,
+    roughness: 0.14,
+    transparent: true,
+    opacity: 0.9,
+    emissive: colorB,
+    emissiveIntensity: 0.04,
+  });
+
+  const top = new THREE.Mesh(sphereGeo, topMat);
+  top.scale.y = 0.5;
+  top.position.y = 0.13;
+
+  const bottom = new THREE.Mesh(sphereGeo, bottomMat);
+  bottom.scale.y = 0.5;
+  bottom.position.y = -0.13;
+
+  const seam = new THREE.Mesh(
+    new THREE.TorusGeometry(0.26, 0.015, 12, 42),
+    new THREE.MeshStandardMaterial({ color: 0xeaf2ff, emissive: 0xbcd6ff, emissiveIntensity: 0.18, roughness: 0.4 })
+  );
+  seam.rotation.x = Math.PI / 2;
+
+  group.add(top, bottom, seam);
+  return group;
 }
 
-function oneShot({ freq = 320, type = "triangle", gain = 0.07, duration = 0.09 } = {}) {
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtx) return;
-  const ctx = new AudioCtx();
-  const osc = ctx.createOscillator();
-  const amp = ctx.createGain();
-  osc.type = type;
-  osc.frequency.value = freq;
-  amp.gain.value = gain;
-  osc.connect(amp).connect(ctx.destination);
-  osc.start();
-  osc.stop(ctx.currentTime + duration);
+function makeCapsule(record, position, opts = {}) {
+  const mesh = createCapsuleMesh(opts.colorA, opts.colorB);
+  mesh.position.copy(position);
+  mesh.userData = {
+    record,
+    floatOffset: Math.random() * Math.PI * 2,
+    base: position.clone(),
+    speed: 0.35 + Math.random() * 0.35,
+    hoverGlow: 0,
+  };
+
+  const glow = new THREE.PointLight(0xb2d4ff, 0.35, 1.6, 2);
+  glow.position.set(0, 0, 0);
+  mesh.add(glow);
+  mesh.userData.glow = glow;
+
+  state.capsules.push(mesh);
+  innerSpaceGroup.add(mesh);
+  return mesh;
 }
 
-function vibrate(ms = 35) {
-  if (navigator.vibrate) navigator.vibrate(ms);
-}
-
-function focusMachine() {
-  dom.machine.scrollIntoView({ behavior: "smooth", block: "center" });
-}
-
-function openUpload() {
-  dom.uploadModal.classList.remove("hidden");
-  setStatus("Deposit active.", "Upload sketch, text, or palette. The machine will remix energy signatures.");
-  oneShot({ freq: 540, type: "square", gain: 0.06 });
-}
-
-function closeUpload() {
-  dom.uploadModal.classList.add("hidden");
-}
-
-function startAnalysis() {
-  setStatus("Analyzing your leftovers...", "Parsing visual rhythm, text tone, and palette mood.");
-  dom.drawGrid.classList.add("hidden");
-  dom.vault.classList.add("fast");
-  oneShot({ freq: 140, gain: 0.09, duration: 0.12 });
-
-  setTimeout(() => setStatus("Syncing fragment pool...", "Matching with anonymous donors."), 850);
-  setTimeout(() => setStatus("Step 2 ready.", "Choose A for visual. Choose B for hybrid."), 1850);
-  setTimeout(() => {
-    dom.vault.classList.remove("fast");
-    dom.drawGrid.classList.remove("hidden");
-    setStage(2);
-    showToast("Draw mode unlocked.");
-  }, 2600);
-}
-
-function dropCapsule(mode) {
-  state.mode = mode;
-  const label = mode === "visual" ? "visual" : "hybrid";
-  setStatus(`Capsule generated: ${label}.`, "Tap the capsule in the lane to unbox.");
-  dom.capsuleDrop.classList.remove("hidden", "drop");
-  void dom.capsuleDrop.offsetWidth;
-  dom.capsuleDrop.classList.add("drop");
-  oneShot({ freq: mode === "visual" ? 420 : 360, type: "square", gain: 0.09 });
-  vibrate(46);
-  setStage(2);
-}
-
-function renderFragment(mode) {
-  const pool = fragments[mode] || fragments.hybrid;
-  const pick = pool[Math.floor(Math.random() * pool.length)];
-  dom.fragmentBox.innerHTML = `
-    <h3>${pick.title}</h3>
-    <div class="fragment-preview"><p>${pick.body}</p></div>
-    <div class="chips">${pick.colors.map((c) => `<span class="chip" style="background:${c}"></span>`).join("")}</div>
-  `;
-}
-
-function openUnbox() {
-  if (!state.mode) {
-    showToast("Pick A or B first.");
-    return;
+function seedCapsules() {
+  state.capsules.length = 0;
+  for (let i = 0; i < 18; i += 1) {
+    const radius = 1.1 + Math.random() * 1.15;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.random() * Math.PI;
+    const position = new THREE.Vector3(
+      radius * Math.sin(phi) * Math.cos(theta),
+      radius * Math.cos(phi) * 0.75,
+      radius * Math.sin(phi) * Math.sin(theta)
+    );
+    const rec = capsuleDataPool[i % capsuleDataPool.length];
+    makeCapsule(rec, position, {
+      colorA: new THREE.Color().setHSL(0.58 + Math.random() * 0.08, 0.7, 0.72).getHex(),
+      colorB: new THREE.Color().setHSL(0.72 + Math.random() * 0.08, 0.65, 0.68).getHex(),
+    });
   }
-  dom.unboxModal.classList.remove("hidden");
-  renderFragment(state.mode);
-  setStatus("Step 3: Save or Mark Used.", "If reused within 30 days, donor gets an anonymous ping.");
-  setStage(3);
-  oneShot({ freq: 620, gain: 0.1 });
 }
 
-function closeUnbox() {
-  dom.unboxModal.classList.add("hidden");
-}
+function initThree() {
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x05070f, 0.13);
 
-function runPointerEngine() {
-  function frame() {
-    state.smoothX += (state.pointerX - state.smoothX) * 0.08;
-    state.smoothY += (state.pointerY - state.smoothY) * 0.08;
+  camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 0.35, 5.6);
 
-    const nx = state.smoothX / window.innerWidth - 0.5;
-    const ny = state.smoothY / window.innerHeight - 0.5;
+  renderer = new THREE.WebGLRenderer({ canvas: dom.canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    dom.installation.style.transform = `rotateY(${nx * 18}deg) rotateX(${ny * -11}deg)`;
-    dom.machine.style.transform = `translateZ(8px) rotateY(${nx * 8}deg) rotateX(${ny * -6}deg)`;
-    dom.robotArm.style.transform = `rotate(${nx * 30}deg) translateY(${ny * 12}px)`;
+  controls = new OrbitControls(camera, dom.canvas);
+  controls.enableDamping = true;
+  controls.enablePan = false;
+  controls.minDistance = 3.6;
+  controls.maxDistance = 8.1;
+  controls.rotateSpeed = 0.8;
 
-    dom.lightFollow.style.left = `${state.smoothX}px`;
-    dom.lightFollow.style.top = `${state.smoothY}px`;
+  rootGroup = new THREE.Group();
+  scene.add(rootGroup);
 
-    dom.coinCursor.style.left = `${state.smoothX}px`;
-    dom.coinCursor.style.top = `${state.smoothY}px`;
+  const hemi = new THREE.HemisphereLight(0xdde9ff, 0x0d1222, 0.9);
+  scene.add(hemi);
 
-    requestAnimationFrame(frame);
+  const key = new THREE.DirectionalLight(0xb6d8ff, 1.2);
+  key.position.set(4, 3, 5);
+  scene.add(key);
+
+  const rim = new THREE.PointLight(0xc59bff, 2.1, 14, 1.8);
+  rim.position.set(-3, 0.8, -2.6);
+  scene.add(rim);
+
+  glassShell = new THREE.Mesh(
+    new THREE.SphereGeometry(2.3, 64, 64),
+    new THREE.MeshPhysicalMaterial({
+      color: 0xd8e7ff,
+      transmission: 1,
+      thickness: 0.65,
+      roughness: 0.08,
+      metalness: 0,
+      clearcoat: 1,
+      clearcoatRoughness: 0.06,
+      transparent: true,
+      opacity: 0.55,
+    })
+  );
+
+  const shellRim = new THREE.Mesh(
+    new THREE.TorusGeometry(2.32, 0.045, 20, 140),
+    new THREE.MeshStandardMaterial({ color: 0xdbe9ff, emissive: 0xaecbff, emissiveIntensity: 0.25, roughness: 0.3 })
+  );
+  shellRim.rotation.x = Math.PI / 2;
+
+  innerSpaceGroup = new THREE.Group();
+  const insideStars = new THREE.Points(
+    new THREE.BufferGeometry(),
+    new THREE.PointsMaterial({ color: 0xb8d7ff, size: 0.03, transparent: true, opacity: 0.8 })
+  );
+
+  const starPositions = [];
+  for (let i = 0; i < 450; i += 1) {
+    const r = 0.4 + Math.random() * 1.7;
+    const t = Math.random() * Math.PI * 2;
+    const p = Math.random() * Math.PI;
+    starPositions.push(r * Math.sin(p) * Math.cos(t), r * Math.cos(p), r * Math.sin(p) * Math.sin(t));
   }
-  requestAnimationFrame(frame);
+  insideStars.geometry.setAttribute("position", new THREE.Float32BufferAttribute(starPositions, 3));
+
+  const distantStars = new THREE.Points(
+    new THREE.BufferGeometry(),
+    new THREE.PointsMaterial({ color: 0x96b8ff, size: 0.028, transparent: true, opacity: 0.75 })
+  );
+  const distantPositions = [];
+  for (let i = 0; i < 1000; i += 1) {
+    distantPositions.push((Math.random() - 0.5) * 44, (Math.random() - 0.5) * 28, -12 - Math.random() * 28);
+  }
+  distantStars.geometry.setAttribute("position", new THREE.Float32BufferAttribute(distantPositions, 3));
+  scene.add(distantStars);
+
+  rootGroup.add(glassShell, shellRim, innerSpaceGroup, insideStars);
+
+  const baseRing = new THREE.Mesh(
+    new THREE.TorusGeometry(2.58, 0.07, 16, 120),
+    new THREE.MeshStandardMaterial({ color: 0x9ebcff, emissive: 0x85a8ff, emissiveIntensity: 0.22, roughness: 0.45 })
+  );
+  baseRing.rotation.x = Math.PI / 2;
+  baseRing.position.y = -2.15;
+  rootGroup.add(baseRing);
+
+  seedCapsules();
+
+  raycaster = new THREE.Raycaster();
+  pointer = new THREE.Vector2(999, 999);
+  clock = new THREE.Clock();
+
+  dom.canvas.addEventListener("pointermove", onPointerMove);
+  dom.canvas.addEventListener("click", onCanvasClick);
+  window.addEventListener("resize", onResize);
 }
 
-function runPlasmaBackground() {
-  const canvas = dom.plasmaCanvas;
-  const ctx = canvas.getContext("2d");
-  let time = 0;
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
 
-  function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.floor(window.innerWidth * dpr);
-    canvas.height = Math.floor(window.innerHeight * dpr);
-    canvas.style.width = `${window.innerWidth}px`;
-    canvas.style.height = `${window.innerHeight}px`;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
+function onPointerMove(event) {
+  const rect = dom.canvas.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  touchActivity();
+}
 
-  function draw() {
-    time += 0.0035;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+function onCanvasClick() {
+  touchActivity();
+  if (hoveredCapsule) openCapsuleCard(hoveredCapsule.userData.record);
+}
 
-    ctx.clearRect(0, 0, w, h);
+function updateHover() {
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(state.capsules, true);
 
-    for (let i = 0; i < 6; i += 1) {
-      const x = w * (0.5 + Math.sin(time * (0.8 + i * 0.17) + i) * 0.35);
-      const y = h * (0.45 + Math.cos(time * (0.7 + i * 0.16) + i * 1.3) * 0.32);
-      const r = 220 + Math.sin(time * 2 + i) * 90;
-
-      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, i % 2 === 0 ? "rgba(255, 100, 210, 0.24)" : "rgba(189, 125, 255, 0.2)");
-      g.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
+  let capsuleHit = null;
+  for (const hit of hits) {
+    let parent = hit.object;
+    while (parent && !parent.userData.record) parent = parent.parent;
+    if (parent && parent.userData.record) {
+      capsuleHit = parent;
+      break;
     }
-
-    requestAnimationFrame(draw);
   }
 
-  resize();
-  window.addEventListener("resize", resize);
-  requestAnimationFrame(draw);
+  hoveredCapsule = capsuleHit;
+
+  for (const capsule of state.capsules) {
+    capsule.userData.hoverGlow += ((capsule === hoveredCapsule ? 1 : 0) - capsule.userData.hoverGlow) * 0.12;
+    capsule.scale.setScalar(1 + capsule.userData.hoverGlow * 0.16);
+    capsule.userData.glow.intensity = 0.35 + capsule.userData.hoverGlow * 1.15;
+  }
 }
 
-function spawnParticle() {
-  const node = document.createElement("span");
-  const isStar = Math.random() > 0.52;
-  node.className = `float-particle ${isStar ? "star" : "bubble"}`;
-  const size = 6 + Math.random() * 18;
-  node.style.width = `${size}px`;
-  node.style.height = `${size}px`;
-  node.style.left = `${Math.random() * 100}%`;
-  node.style.animationDuration = `${8 + Math.random() * 10}s`;
-  node.style.opacity = `${0.25 + Math.random() * 0.65}`;
-  node.style.background = isStar
-    ? `rgba(255, ${160 + Math.floor(Math.random() * 80)}, 242, 0.95)`
-    : "radial-gradient(circle at 32% 30%, rgba(255,255,255,0.95), rgba(255,128,222,0.32), rgba(155,87,255,0.2))";
-  dom.floatingLayer.appendChild(node);
-  node.addEventListener("animationend", () => node.remove());
+function animateCapsules(t) {
+  const elapsed = t * 0.001;
+  for (const capsule of state.capsules) {
+    const d = capsule.userData;
+    capsule.position.x = d.base.x + Math.sin(elapsed * d.speed + d.floatOffset) * 0.06;
+    capsule.position.y = d.base.y + Math.cos(elapsed * (d.speed + 0.12) + d.floatOffset) * 0.07;
+    capsule.position.z = d.base.z + Math.sin(elapsed * (d.speed + 0.22) + d.floatOffset) * 0.05;
+  }
 }
 
-function runParticles() {
-  for (let i = 0; i < 18; i += 1) spawnParticle();
-  setInterval(spawnParticle, 440);
+function openCapsuleCard(record) {
+  dom.cardTitle.textContent = record.title;
+  dom.cardSketch.textContent = record.sketch;
+  dom.cardText.textContent = record.text;
+  dom.cardPalette.innerHTML = record.palette.map((c) => `<span class="palette-swatch" style="background:${c}"></span>`).join("");
+  dom.capsuleCard.classList.remove("hidden");
+  state.selectedCapsule = record;
 }
 
-function buildAmbientSound() {
+function closeCapsuleCard() {
+  dom.capsuleCard.classList.add("hidden");
+}
+
+function depositIntoMachine(payload) {
+  const record = {
+    title: "capsule · deposited",
+    sketch: payload.image ? "uploaded sketch" : "new sketch fragment",
+    text: payload.text || "deposited text fragment",
+    palette: payload.palette,
+  };
+  state.deposited.push(record.text);
+  refreshHistory();
+
+  const startPos = new THREE.Vector3(0, -2.6, 2.8);
+  const capsule = makeCapsule(record, startPos, { colorA: 0x9fd3ff, colorB: 0xc194ff });
+
+  let progress = 0;
+  const target = new THREE.Vector3((Math.random() - 0.5) * 1.7, (Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 1.7);
+
+  function step() {
+    progress += 0.016;
+    const eased = 1 - Math.pow(1 - Math.min(progress, 1), 3);
+    capsule.position.lerpVectors(startPos, target, eased);
+
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      capsule.userData.base.copy(target);
+      showToast("your idea is now floating in the machine");
+    }
+  }
+
+  step();
+}
+
+function pullCapsule() {
+  if (state.pullInProgress || state.capsules.length === 0) return;
+  state.pullInProgress = true;
+  touchActivity();
+
+  const index = Math.floor(Math.random() * state.capsules.length);
+  const picked = state.capsules[index];
+
+  const from = picked.position.clone();
+  const to = new THREE.Vector3(0, -0.2, 2.5);
+  let progress = 0;
+
+  function step() {
+    progress += 0.022;
+    const eased = Math.min(progress, 1);
+    picked.position.lerpVectors(from, to, eased);
+
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      state.pullInProgress = false;
+      state.collected.push(picked.userData.record.text);
+      refreshHistory();
+      openCapsuleCard(picked.userData.record);
+      picked.userData.base.copy(from);
+    }
+  }
+
+  step();
+}
+
+function refreshHistory() {
+  dom.depositedList.innerHTML = state.deposited.slice(-8).map((item) => `<li>${item}</li>`).join("");
+  dom.collectedList.innerHTML = state.collected.slice(-8).map((item) => `<li>${item}</li>`).join("");
+}
+
+function startAmbient() {
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   if (!AudioCtx) return;
   if (!state.ambientCtx) state.ambientCtx = new AudioCtx();
@@ -285,31 +417,29 @@ function buildAmbientSound() {
   const shimmer = ctx.createOscillator();
   const lfo = ctx.createOscillator();
   const lfoGain = ctx.createGain();
-  const droneGain = ctx.createGain();
-  const shimmerGain = ctx.createGain();
+  const g1 = ctx.createGain();
+  const g2 = ctx.createGain();
   const lowpass = ctx.createBiquadFilter();
   const master = ctx.createGain();
 
   drone.type = "sine";
-  drone.frequency.value = 144;
+  drone.frequency.value = 136;
   shimmer.type = "triangle";
-  shimmer.frequency.value = 288;
+  shimmer.frequency.value = 272;
   lfo.type = "sine";
-  lfo.frequency.value = 0.09;
+  lfo.frequency.value = 0.08;
+  lfoGain.gain.value = 26;
 
-  lfoGain.gain.value = 30;
-  droneGain.gain.value = 0.02;
-  shimmerGain.gain.value = 0.012;
-
+  g1.gain.value = 0.02;
+  g2.gain.value = 0.012;
   lowpass.type = "lowpass";
-  lowpass.frequency.value = 1200;
-  master.gain.value = 0.12;
+  lowpass.frequency.value = 900;
+  master.gain.value = 0.15;
 
   lfo.connect(lfoGain);
   lfoGain.connect(shimmer.frequency);
-
-  drone.connect(droneGain).connect(lowpass);
-  shimmer.connect(shimmerGain).connect(lowpass);
+  drone.connect(g1).connect(lowpass);
+  shimmer.connect(g2).connect(lowpass);
   lowpass.connect(master).connect(ctx.destination);
 
   drone.start();
@@ -319,86 +449,112 @@ function buildAmbientSound() {
   state.ambientNodes = { drone, shimmer, lfo };
 }
 
-function stopAmbientSound() {
-  if (!state.ambientNodes) return;
-  const { drone, shimmer, lfo } = state.ambientNodes;
+function stopAmbient() {
+  if (!state.ambientNodes || !state.ambientCtx) return;
   const t = state.ambientCtx.currentTime;
-  drone.stop(t + 0.02);
-  shimmer.stop(t + 0.02);
-  lfo.stop(t + 0.02);
+  state.ambientNodes.drone.stop(t + 0.02);
+  state.ambientNodes.shimmer.stop(t + 0.02);
+  state.ambientNodes.lfo.stop(t + 0.02);
   state.ambientNodes = null;
 }
 
-function toggleSound() {
-  state.soundOn = !state.soundOn;
-  dom.soundToggle.textContent = state.soundOn ? "Sound On" : "Sound Off";
-  if (state.soundOn) {
-    buildAmbientSound();
-    showToast("Ambient sound enabled.");
-  } else {
-    stopAmbientSound();
-    showToast("Sound muted.");
+function tick() {
+  const elapsed = clock.getElapsedTime();
+  controls.update();
+
+  rootGroup.rotation.y += 0.00075;
+  rootGroup.rotation.x = Math.sin(elapsed * 0.22) * 0.02;
+
+  innerSpaceGroup.rotation.y -= 0.00095;
+  innerSpaceGroup.rotation.x = Math.sin(elapsed * 0.3) * 0.05;
+
+  animateCapsules(performance.now());
+  updateHover();
+
+  if (Date.now() - state.lastActionTs > 12000) {
+    dom.idleLine.classList.remove("hidden");
   }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
 }
 
-function randomizePrompt() {
-  const prompt = prompts[Math.floor(Math.random() * prompts.length)];
-  dom.promptText.textContent = prompt;
-  oneShot({ freq: 490, gain: 0.06, duration: 0.06 });
-}
-
-function attachEvents() {
-  window.addEventListener("pointermove", (event) => {
-    state.pointerX = event.clientX;
-    state.pointerY = event.clientY;
+function bindUi() {
+  dom.enterBtn.addEventListener("click", () => {
+    state.started = true;
+    dom.intro.classList.add("hidden");
+    dom.experience.classList.remove("hidden");
+    touchActivity();
+    if (!scene) {
+      initThree();
+      tick();
+    }
   });
 
-  dom.startDeposit.addEventListener("click", () => {
-    focusMachine();
-    openUpload();
+  dom.depositBtn.addEventListener("click", () => {
+    dom.depositModal.classList.remove("hidden");
+    touchActivity();
   });
 
-  dom.skipDeposit.addEventListener("click", () => {
-    dom.drawGrid.classList.remove("hidden");
-    setStatus("Step 2 enabled.", "Pick A or B to draw without deposit.");
-    setStage(2);
-    focusMachine();
-  });
+  dom.closeDepositBtn.addEventListener("click", () => dom.depositModal.classList.add("hidden"));
 
-  dom.depositKey.addEventListener("click", openUpload);
-  dom.closeUpload.addEventListener("click", closeUpload);
-  dom.uploadForm.addEventListener("submit", (event) => {
+  dom.depositForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    closeUpload();
-    startAnalysis();
+    const image = document.getElementById("ideaImage").files[0] || null;
+    const text = document.getElementById("ideaText").value.trim();
+    const paletteInputs = Array.from(dom.depositForm.querySelectorAll('input[type="color"]'));
+    const palette = paletteInputs.map((input) => input.value);
+
+    depositIntoMachine({ image, text, palette });
+    dom.depositModal.classList.add("hidden");
+    dom.depositForm.reset();
+    showToast("capsule sealed and drifting inside");
+    touchActivity();
   });
 
-  dom.btnA.addEventListener("click", () => dropCapsule("visual"));
-  dom.btnB.addEventListener("click", () => dropCapsule("hybrid"));
-  document.querySelectorAll(".draw-option").forEach((btn) => {
-    btn.addEventListener("click", () => dropCapsule(btn.dataset.mode));
+  dom.pullBtn.addEventListener("click", () => {
+    pullCapsule();
+    touchActivity();
   });
 
-  dom.capsuleDrop.addEventListener("click", openUnbox);
-  dom.closeUnbox.addEventListener("click", closeUnbox);
-
-  dom.saveFragment.addEventListener("click", () => {
-    setStage(3);
-    showToast("Fragment saved.");
+  dom.closeCardBtn.addEventListener("click", closeCapsuleCard);
+  dom.keepBtn.addEventListener("click", () => {
+    showToast("capsule kept");
+    closeCapsuleCard();
+  });
+  dom.useBtn.addEventListener("click", () => {
+    showToast("marked as used");
+    closeCapsuleCard();
+  });
+  dom.remixBtn.addEventListener("click", () => {
+    dom.remixTools.classList.toggle("hidden");
+    showToast("remix tools opened");
   });
 
-  dom.markUsed.addEventListener("click", () => {
-    setStage(3);
-    showToast("Marked as used.");
-    closeUnbox();
+  dom.toolDraw.addEventListener("click", () => showToast("draw mode enabled"));
+  dom.toolRecolor.addEventListener("click", () => showToast("recolor mode enabled"));
+  dom.toolText.addEventListener("click", () => showToast("text rearrange mode enabled"));
+
+  dom.historyBtn.addEventListener("click", () => {
+    dom.historyShelf.classList.toggle("hidden");
+    touchActivity();
   });
 
-  dom.soundToggle.addEventListener("click", toggleSound);
-  dom.randomPrompt.addEventListener("click", randomizePrompt);
+  dom.soundToggle.addEventListener("click", () => {
+    state.soundOn = !state.soundOn;
+    dom.soundToggle.textContent = state.soundOn ? "Sound On" : "Sound Off";
+    if (state.soundOn) {
+      startAmbient();
+      showToast("ambient sound on");
+    } else {
+      stopAmbient();
+      showToast("ambient sound off");
+    }
+  });
+
+  ["pointerdown", "wheel", "keydown"].forEach((evt) => {
+    window.addEventListener(evt, touchActivity, { passive: true });
+  });
 }
 
-setStage(1);
-runPointerEngine();
-runPlasmaBackground();
-runParticles();
-attachEvents();
+bindUi();
