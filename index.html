@@ -9,17 +9,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
 </head>
-<body>
+<body class="pre-enter">
   <div id="app">
-    <section id="intro" class="intro visible">
-      <div class="intro-copy">
-        <h1>SWAP SHOP</h1>
-        <p>exchange unused ideas</p>
-        <button id="enterBtn" class="btn">enter</button>
-      </div>
-    </section>
-
-    <section id="experience" class="experience hidden">
+    <section id="experience" class="experience">
       <canvas id="sceneCanvas"></canvas>
 
       <button id="historyBtn" class="history-btn">my capsules</button>
@@ -27,44 +19,39 @@
       <div class="minimal-ui">
         <button id="depositBtn" class="btn">deposit idea</button>
       </div>
-
       <button id="pullBtn" class="pull-btn btn">pull capsule</button>
 
       <div id="idleLine" class="idle-line hidden">ideas never disappear<br>they just change hands</div>
 
       <div id="capsuleCard" class="overlay hidden">
-        <div class="card">
+        <div class="capsule-panel">
+          <button id="closeCardBtn" class="panel-close">×</button>
           <h2 id="cardTitle">capsule</h2>
-          <div class="card-body">
-            <div class="preview" id="cardSketch">sketch fragment</div>
-            <p id="cardText">text fragment</p>
-            <div id="cardPalette" class="palette"></div>
-          </div>
+          <div class="preview-orb" id="cardSketch">sketch fragment</div>
+          <p id="cardText">text fragment</p>
+          <div id="cardPalette" class="palette"></div>
           <div class="card-actions">
             <button id="useBtn" class="btn small">use</button>
             <button id="keepBtn" class="btn small">keep</button>
             <button id="remixBtn" class="btn small">remix</button>
-            <button id="closeCardBtn" class="btn small ghost">close</button>
           </div>
         </div>
       </div>
 
       <div id="depositModal" class="overlay hidden">
-        <form id="depositForm" class="card">
+        <form id="depositForm" class="capsule-panel deposit">
+          <button type="button" id="closeDepositBtn" class="panel-close">×</button>
           <h2>drop your idea</h2>
           <label>image<input type="file" id="ideaImage" accept="image/*"></label>
           <label>text<textarea id="ideaText" rows="3" placeholder="one unfinished line..."></textarea></label>
           <label>palette
             <div class="palette-inputs">
-              <input type="color" value="#ff74d8">
-              <input type="color" value="#a985ff">
-              <input type="color" value="#77d9ff">
+              <input type="color" value="#ff4ec7">
+              <input type="color" value="#7f57ff">
+              <input type="color" value="#ffd98b">
             </div>
           </label>
-          <div class="card-actions">
-            <button type="submit" class="btn small">seal capsule</button>
-            <button type="button" id="closeDepositBtn" class="btn small ghost">close</button>
-          </div>
+          <button type="submit" class="btn small">seal capsule</button>
         </form>
       </div>
 
@@ -86,7 +73,16 @@
         <button class="btn tiny" id="toolText">rearrange text</button>
       </div>
 
+      <button id="soundToggle" class="sound-btn">sound off</button>
       <div id="toast" class="toast hidden"></div>
+    </section>
+
+    <section id="intro" class="intro">
+      <div class="intro-copy">
+        <h1>SWAP SHOP</h1>
+        <p>exchange unused ideas</p>
+        <button id="enterBtn" class="btn">enter</button>
+      </div>
     </section>
   </div>
 
